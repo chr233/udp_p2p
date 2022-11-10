@@ -1,13 +1,51 @@
 
+from base64 import b64encode
 import os
+import time
 from collections import Counter
 from os import path
 from socket import socket as Socket
 from typing import Dict, Tuple, List
 
-from core.exceptions import AuthenticationError
-from core.utils import get_timestamp, log, get_time_str
+from core.exceptions import AuthenticationError, FileParseError
 from core.log_helper import LogHelper
+
+
+def get_timestamp():
+    return int(time.time())
+
+
+def get_localtime():
+    return time.strftime("%d %B %Y %H:%M:%S", time.localtime())
+
+
+def println(msg: str, addr: Tuple[str, int] = None, error: bool = False):
+    if addr:
+        title = f'{addr[0]}:{addr[1]}'
+        color = 32 if not error else 31
+    else:
+        title = 'Server'
+        color = 34 if not error else 35
+
+    print(f'[\033[{color}m {title} \033[0m] {msg}')
+
+
+def read_file_content(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
+        if len(data) > 50000:
+            raise FileParseError('File is too large, can not send')
+
+    body = b64encode(data).decode('utf-8')
+    return body
+
+
+def read_file_content_ex(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
+
+    body = b64encode(data).decode('utf-8')
+    return body
 
 
 class AuthHandler:
@@ -128,9 +166,9 @@ class AuthHandler:
                 deviceID = self.user_id_dict[username]
 
             self.device_logger.log(
-                deviceID, get_time_str(), username, ip, port
+                deviceID, get_localtime(), username, ip, port
             )
-            log(f'Edge device {username} online', addr, False)
+            println(f'Edge device {username} online', addr, False)
 
             return username
 
@@ -143,7 +181,7 @@ class AuthHandler:
             self.user_socket_dict.pop(username, None)
             addr = self.online_client_dict.pop(username, None)
 
-            log(f'Edge device {username} offline', addr, False)
+            println(f'Edge device {username} offline', addr, False)
             return username
         else:
             return None

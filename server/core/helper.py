@@ -1,52 +1,44 @@
 
 import json
+import os
 import time
 from base64 import b64encode
 from json import JSONDecodeError
-import os
 from typing import Dict, Tuple
 
-from core.exceptions import FileParseError, PayloadParseError, P2PBaseException
+from core.exceptions import FileParseError, P2PBaseException, PayloadParseError
 
 
 def get_timestamp():
     return int(time.time())
 
 
-def get_time_str():
-    return time.strftime("%d %B %Y %H:%M:%S", time.localtime())
 
-
-def package_file(file_path: str) -> Tuple[str, str]:
-    name = os.path.basename(file_path)
-
+def read_file_content(file_path: str) -> Tuple[str, str]:
     with open(file_path, 'rb') as f:
         data = f.read()
         if len(data) > 50000:
             raise FileParseError('File is too large, can not send')
 
     body = b64encode(data).decode('utf-8')
-    return (name, body)
+    return body
 
 
-def log(msg: str, addr: Tuple[str, int] = None, error: bool = False):
-    if addr:
-        title = f'{addr[0]}:{addr[1]}'
-        color = 32 if not error else 31
-    else:
-        title = 'Server'
-        color = 34 if not error else 35
+def read_file_content_ex(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
 
-    print(f'[\033[{color}m {title} \033[0m] {msg}')
+    body = b64encode(data).decode('utf-8')
+    return body
 
 
-def json_serializer(obj: dict) -> bytes:
+def dict_2_json(obj: dict) -> bytes:
     jd = json.dumps(obj)
     raw = jd.encode('utf-8')
     return raw
 
 
-def json_deserializer(data: bytes) -> Dict[str, str]:
+def json_2_dict(data: bytes) -> Dict[str, str]:
     try:
         raw = data.decode('utf-8')
         jd = json.loads(raw)
@@ -66,3 +58,5 @@ def json_deserializer(data: bytes) -> Dict[str, str]:
             raise e
         else:
             raise PayloadParseError('Payload parse error')
+
+

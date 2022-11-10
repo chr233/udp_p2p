@@ -1,17 +1,52 @@
 
 import os
-from base64 import b64decode
+import time
+from base64 import b64decode, b64encode
 from socket import socket as Socket
 from threading import Thread
 from time import sleep
 from typing import Dict, List, Tuple
 
-from core.exceptions import (ArgumentError, FileIOError, P2PBaseException,
-                             PayloadParseError, UnsupportedCmdError)
-from core.payload_helper import PayloadFactory
-from core.utils import json_deserializer, log, package_file_ex, random_str
+from core.exceptions import (ArgumentError, FileIOError, FileParseError,
+                             P2PBaseException, PayloadParseError,
+                             UnsupportedCmdError)
+from core.json_helper import json_2_dict
+from core.payload_factory import PayloadFactory
 
 CHUNK_SIZE = 40000
+
+
+def println(msg: str, addr: Tuple[str, int] = None, error: bool = False):
+    if addr:
+        title = f'{addr[0]}:{addr[1]}'
+        color = 32 if not error else 31
+    else:
+        title = 'Server'
+        color = 34 if not error else 35
+
+    print(f'[\033[{color}m {title} \033[0m] {msg}')
+
+
+def random_str():
+    return str(time.time())[-4:]
+
+
+def read_file_content(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
+        if len(data) > 50000:
+            raise FileParseError('File is too large, can not send')
+
+    body = b64encode(data).decode('utf-8')
+    return body
+
+
+def read_file_content_ex(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
+
+    body = b64encode(data).decode('utf-8')
+    return body
 
 
 class UDPHandler():
@@ -38,7 +73,8 @@ class UDPHandler():
                         count = 5
                     if not self.download_file[file_name][i]:
                         echo = random_str()
-                        payload = PayloadFactory.request_dwn(file_name, i, echo)
+                        payload = PayloadFactory.request_dwn(
+                            file_name, i, echo)
                         self.sock.sendto(payload, addr)
                         count -= 1
 
@@ -57,10 +93,12 @@ class UDPHandler():
                 raw = b64decode(body)
                 f.write(raw)
 
-            log(f'Received {file_name} from {device}, save at {file_path}', addr, False)
+            println(
+                f'Received {file_name} from {device}, save at {file_path}', addr, False)
             print('> ', end='')
         except Exception as e:
-            log(f'Received {file_name} from {device} failed, {e}', addr, True)
+            println(
+                f'Received {file_name} from {device} failed, {e}', addr, True)
             print('> ', end='')
         finally:
             self.download_file.pop(file_name, None)
@@ -71,7 +109,7 @@ class UDPHandler():
         try:
             response = None
 
-            payload = json_deserializer(raw)
+            payload = json_2_dict(raw)
 
             # log(f'U IN  <-- {payload}', None, False)
 
@@ -111,7 +149,7 @@ class UDPHandler():
                         else:
                             raise FileIOError('File not exists')
 
-                        cache = package_file_ex(file_path)
+                        cache = read_file_content_ex(file_path)
                         self.file_cache[file_name] = cache
 
                     else:

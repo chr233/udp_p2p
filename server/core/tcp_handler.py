@@ -1,15 +1,17 @@
 
 import os
+import time
 from base64 import b64decode
 from socket import socket as Socket
-from typing import List
+from typing import List, Tuple
 
 from core.auth_handler import AuthHandler
-from core.exceptions import (ArgumentError, AuthenticationError, PayloadParseError,
-                             FileParseError, P2PBaseException, UnsupportedCmdError)
+from core.exceptions import (ArgumentError, AuthenticationError,
+                             FileParseError, P2PBaseException,
+                             PayloadParseError, UnsupportedCmdError)
+from core.json_helper import json_2_dict
 from core.log_helper import LogHelper
 from core.payload_fatory import PayloadFactory
-from core.utils import json_deserializer, log, get_time_str
 
 CMD_USAGE = {
     'EDG': 'Usage: EDG fileID count',
@@ -23,6 +25,21 @@ CMD_USAGE = {
 CMDS = CMD_USAGE.keys()
 
 OPS = ('SUM', 'AVERAGE', 'MAX', 'MIN')
+
+
+def get_localtime():
+    return time.strftime("%d %B %Y %H:%M:%S", time.localtime())
+
+
+def println(msg: str, addr: Tuple[str, int] = None, error: bool = False):
+    if addr:
+        title = f'{addr[0]}:{addr[1]}'
+        color = 32 if not error else 31
+    else:
+        title = 'Server'
+        color = 34 if not error else 35
+
+    print(f'[\033[{color}m {title} \033[0m] {msg}')
 
 
 class TCPHandler():
@@ -54,7 +71,7 @@ class TCPHandler():
     def handle_message(self, raw: bytes, socket: Socket):
         try:
             response = None
-            payload = json_deserializer(raw)
+            payload = json_2_dict(raw)
             echo = payload['echo']
 
             addr = socket.getpeername()
@@ -111,14 +128,14 @@ class TCPHandler():
                                 f'Parse file {file_name} error')
 
                         self.upload_logger.log(
-                            device, get_time_str(), fileID, length
+                            device, get_localtime(), fileID, length
                         )
 
                         result = f'Successfully uploaded file {file_name}'
                         response = PayloadFactory.response_ued(result, echo)
 
-                        log(f'{device} issued {cmd} command', addr, False)
-                        log(
+                        println(f'{device} issued {cmd} command', addr, False)
+                        println(
                             f'successful received file {file_name} from {device}', addr, False)
 
                     elif cmd == 'SCS':
@@ -159,12 +176,13 @@ class TCPHandler():
                             value = min(nums)*1.0
 
                         msg = f'Computation {op} result on the file {fileID} returned from the server is: {value}'
-                        log(f'{op} computation has been made on edge device {device} data file {fileID}, the result is {value}', addr, False)
+                        println(
+                            f'{op} computation has been made on edge device {device} data file {fileID}, the result is {value}', addr, False)
 
                         response = PayloadFactory.response_scs(
                             msg, echo)
 
-                        log(f'{device} issued {cmd} command', addr, False)
+                        println(f'{device} issued {cmd} command', addr, False)
 
                     elif cmd == 'DTE':
                         fileID = payload['fid']
@@ -191,14 +209,14 @@ class TCPHandler():
                                 f'Can not delete file {file_name}')
 
                         self.detetion_logger.log(
-                            device, get_time_str(), fileID, length
+                            device, get_localtime(), fileID, length
                         )
 
                         result = f'Successfully deleted file {file_name}'
                         response = PayloadFactory.response_ued(result, echo)
 
-                        log(f'{device} issued {cmd} command', addr, False)
-                        log(
+                        println(f'{device} issued {cmd} command', addr, False)
+                        println(
                             f'successful delete file {file_name} for {device}', addr, False
                         )
 
@@ -213,7 +231,7 @@ class TCPHandler():
                         response = PayloadFactory.response_aed(
                             clients, '', echo)
 
-                        log(f'{device} issued {cmd} command', addr, False)
+                        println(f'{device} issued {cmd} command', addr, False)
 
                     elif cmd == 'OUT':
                         self.auth_handler.logout(socket)
@@ -221,7 +239,7 @@ class TCPHandler():
 
                         response = PayloadFactory.response_out(msg, echo)
 
-                        log(f'{device} issued {cmd} command', addr, False)
+                        println(f'{device} issued {cmd} command', addr, False)
 
                     else:
                         u_cmd = cmd.upper()
@@ -238,14 +256,14 @@ class TCPHandler():
             response = PayloadFactory.response_error(err, echo)
 
         except AuthenticationError as e:
-            log(e.msg, addr, True)
+            println(e.msg, addr, True)
             response = PayloadFactory.response_error(e, echo)
 
         except P2PBaseException as e:
             response = PayloadFactory.response_error(e, echo)
 
         except Exception as e:
-            log(e, addr, True)
+            println(e, addr, True)
             err = P2PBaseException('Internal Server Error')
             response = PayloadFactory.response_error(err, echo)
 

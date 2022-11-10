@@ -5,16 +5,26 @@ import socket
 import sys
 from queue import Empty, Queue
 from socket import socket as Socket
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import struct
 
 from core.tcp_handler import TCPHandler
 
-from core.utils import log
 
 LISTEN_ON = '0.0.0.0'
 
 RECV_BYTES = 10240
+
+
+def println(msg: str, addr: Tuple[str, int] = None, error: bool = False):
+    if addr:
+        title = f'{addr[0]}:{addr[1]}'
+        color = 32 if not error else 31
+    else:
+        title = 'Server'
+        color = 34 if not error else 35
+
+    print(f'[\033[{color}m {title} \033[0m] {msg}')
 
 
 def main(port, attempts):
@@ -29,15 +39,15 @@ def main(port, attempts):
         host = LISTEN_ON
         tcp_socket.bind((host, port))
         tcp_socket.listen(10)
-        log(f'TCP server listening on {host}:{port}', None, False)
+        println(f'TCP server listening on {host}:{port}', None, False)
     except OSError as s:
-        log(f'TCP server start error: {s}', None, True)
+        println(f'TCP server start error: {s}', None, True)
         return
 
     # Init TCPHandler
     tcp_handler = TCPHandler(base_path, attempts)
 
-    log('Wating for clients ...', None, False)
+    println('Wating for clients ...', None, False)
 
     # Event loop
     try:
@@ -59,7 +69,7 @@ def main(port, attempts):
                     inputs.append(conn)
                     msg_queue[conn] = Queue()
 
-                    log('TCP connection established', addr, False)
+                    println('TCP connection established', addr, False)
 
                 else:
                     try:
@@ -83,7 +93,7 @@ def main(port, attempts):
 
                         else:
                             # TCP close
-                            log('TCP connection closed', addr, False)
+                            println('TCP connection closed', addr, False)
 
                             if s in outputs:
                                 outputs.remove(s)
@@ -93,7 +103,7 @@ def main(port, attempts):
                             s.close()
 
                     except Exception as e:
-                        log(e, addr, True)
+                        println(e, addr, True)
                         try:
                             if s in outputs:
                                 outputs.remove(s)
@@ -117,7 +127,7 @@ def main(port, attempts):
 
             for s in elist:
                 # any socket raises error
-                log('TCP connection error', None, True)
+                println('TCP connection error', None, True)
 
                 inputs.remove(s)
                 if s in outputs:
@@ -131,7 +141,7 @@ def main(port, attempts):
         pass
     finally:
         tcp_socket.close()
-        log('Server shutdown ...', None, True)
+        println('Server shutdown ...', None, True)
 
 
 if __name__ == '__main__':
@@ -139,7 +149,7 @@ if __name__ == '__main__':
         args = sys.argv[1:]
 
         if len(args) < 2:
-            log('Missing arguments', None, True)
+            println('Missing arguments', None, True)
             raise ValueError
 
         port, attempts, *_ = args
@@ -147,19 +157,19 @@ if __name__ == '__main__':
             port = int(port)
             attempts = int(attempts)
         except ValueError as e:
-            log('Arguments type invalid', None, True)
+            println('Arguments type invalid', None, True)
             raise e
 
         if not 0 < port <= 65535:
-            log('Server_port is invalid (0,65535]', None, True)
+            println('Server_port is invalid (0,65535]', None, True)
             raise ValueError
         if not 1 <= attempts <= 5:
-            log('Number_of_consecutive_failed_attempts is invalid [1,5]',
+            println('Number_of_consecutive_failed_attempts is invalid [1,5]',
                 None, True)
             raise ValueError
 
     except ValueError:
-        log('Usage: python3 server.py <server port> <number of consecutive failed attempts>', None, True)
+        println('Usage: python3 server.py <server port> <number of consecutive failed attempts>', None, True)
         input('Press enter to exit...')
         exit(1)
 

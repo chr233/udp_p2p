@@ -3,15 +3,18 @@ import os
 import socket
 import struct
 import sys
+import time
+from base64 import b64encode
 from random import randint
 from socket import socket as Socket
 from threading import Thread
+from typing import Tuple
 
-from core.exceptions import ArgumentError, FileIOError, P2PBaseException
+from core.exceptions import (ArgumentError, FileIOError, FileParseError,
+                             P2PBaseException)
+from core.json_helper import json_2_dict
 from core.payload_factory import PayloadFactory
 from core.udp_handler import CHUNK_SIZE, UDPHandler
-from core.utils import (json_deserializer, package_file, package_file_ex,
-                        random_str)
 
 LISTEN_ON = '0.0.0.0'
 
@@ -28,6 +31,28 @@ TCP_SOCK: Socket
 UDP_SOCK: Socket
 
 DEVICE_NAME: str
+
+
+def random_str():
+    return str(time.time())[-4:]
+
+
+def read_file_content(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
+        if len(data) > 50000:
+            raise FileParseError('File is too large, can not send')
+
+    body = b64encode(data).decode('utf-8')
+    return body
+
+
+def read_file_content_ex(file_path: str) -> Tuple[str, str]:
+    with open(file_path, 'rb') as f:
+        data = f.read()
+
+    body = b64encode(data).decode('utf-8')
+    return body
 
 
 def log(msg: str,  error: bool = False):
@@ -131,7 +156,7 @@ def recv_tcp() -> bytes:
 
 def recv_tcp_json() -> bytes:
     raw = recv_tcp()
-    return json_deserializer(raw)
+    return json_2_dict(raw)
 
 
 def interactive_login(port: int):
@@ -210,7 +235,7 @@ def interactive_commdline(my_port: int) -> str:
                 if not os.path.exists(file_path):
                     raise FileIOError('File not exists')
 
-                body = package_file(file_path)
+                body = read_file_content(file_path)
                 payload = PayloadFactory.request_ued(fileID, body, echo)
 
                 send_tcp(payload)
@@ -278,6 +303,7 @@ def interactive_commdline(my_port: int) -> str:
                         for d, ip, port, ts in clients:
                             data.append(
                                 f'{d}; {ip}; {port}; active since {ts}')
+                        msg = '\n'.join(data)
                 logcmd(msg, error)
 
             elif cmd == 'OUT':
@@ -332,7 +358,7 @@ def interactive_commdline(my_port: int) -> str:
                 if not target_addr:
                     logcmd(f'Device {device_name} not found', True)
                 else:
-                    body = package_file_ex(file_path)
+                    body = read_file_content_ex(file_path)
                     chunk = len(body) // CHUNK_SIZE + 1
 
                     payload = PayloadFactory.request_uvf(

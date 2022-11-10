@@ -1,7 +1,7 @@
 
 from typing import List, Tuple
 from core.exceptions import P2PBaseException
-from core.utils import json_serializer
+from core.json_helper import dict_2_json
 
 
 class PayloadFactory:
@@ -11,14 +11,14 @@ class PayloadFactory:
     def request_test(echo: str = ''):
         '''Test request'''
         jd = {'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_test(echo: str = ''):
         '''Test response'''
         jd = {'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # Auth
@@ -27,14 +27,14 @@ class PayloadFactory:
         '''Login request'''
         jd = {'cmd': 'LOG', 'name': user,
               'pass': passwd, 'port': port, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_log(msg: str = 'OK', echo: str = ''):
         '''Login response'''
         jd = {'succ': True, 'msg': msg, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # UED
@@ -42,14 +42,14 @@ class PayloadFactory:
     def request_ued(fileID: int, body: str, echo: str = ''):
         '''UED request'''
         jd = {'cmd': 'UED', 'fid': fileID, 'body': body, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_ued(msg: str = 'OK', echo: str = ''):
         '''UED response'''
         jd = {'succ': True, 'msg': msg, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # SCS
@@ -57,14 +57,14 @@ class PayloadFactory:
     def request_scs(fileID: int, operator: str, echo: str = ''):
         '''SCS request'''
         jd = {'cmd': 'SCS', 'fid': fileID, 'op': operator, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_scs(msg: str = 'OK',  echo: str = ''):
         '''SCS response'''
         jd = {'succ': True, 'msg': msg, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # DTE
@@ -72,14 +72,14 @@ class PayloadFactory:
     def request_dte(fileID: int,  echo: str = ''):
         '''DTE request'''
         jd = {'cmd': 'DTE', 'fid': fileID, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_dte(msg: str = 'OK', echo: str = ''):
         '''DTE response'''
         jd = {'succ': True, 'msg': msg, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # AED
@@ -87,14 +87,14 @@ class PayloadFactory:
     def request_aed(echo: str = ''):
         '''AED request'''
         jd = {'cmd': 'AED', 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_aed(client: List[Tuple[str, str, int, int]], msg: str = 'OK', echo: str = ''):
         '''AED response'''
         jd = {'succ': True, 'client': client, 'msg': msg, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # OUT
@@ -102,14 +102,14 @@ class PayloadFactory:
     def request_out(echo: str = ''):
         '''OUT request'''
         jd = {'cmd': 'OUT', 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
     def response_out(msg: str = 'OK', echo: str = ''):
         '''OUT response'''
         jd = {'succ': True, 'msg': msg, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # P2P CMD
@@ -119,7 +119,7 @@ class PayloadFactory:
         '''UVF request'''
         jd = {'cmd': 'UVF', 'name': file_name, 'device': device,
               'port': port, 'chunk': chunk, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # DWN
@@ -127,7 +127,7 @@ class PayloadFactory:
     def request_dwn(file_name: str, index: int, echo: str = ''):
         '''DWN request'''
         jd = {'cmd': 'DWN', 'name': file_name, 'i': index, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     @staticmethod
@@ -135,7 +135,7 @@ class PayloadFactory:
         '''DWN response'''
         jd = {'cmd': 'DWNR', 'name': file_name, 'body': body,
               'i': index, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # OTHER
@@ -143,7 +143,7 @@ class PayloadFactory:
     def request_oth(cmd: str, echo: str = ''):
         '''OTHER request'''
         jd = {'cmd': cmd, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
 
     # Other
@@ -153,5 +153,5 @@ class PayloadFactory:
         '''Error response'''
         name = err.__doc__ or str(err.__class__)
         jd = {'succ': False, 'msg': err.msg, 'error': name, 'echo': echo}
-        data = json_serializer(jd)
+        data = dict_2_json(jd)
         return data
