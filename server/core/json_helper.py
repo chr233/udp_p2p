@@ -24,11 +24,6 @@ def json_2_dict(data: bytes) -> Dict[str, str]:
         elif 'echo' not in jd:
             raise PayloadParseError('Missing echo in the payload')
         return jd
-    except UnicodeDecodeError:
-        raise PayloadParseError('Payload can not decode to UTF-8')
-
-    except JSONDecodeError:
-        raise PayloadParseError('Payload can not decode to JSON')
 
     except Exception as e:
         if isinstance(e, P2PBaseException):
